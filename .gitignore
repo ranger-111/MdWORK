@@ -1,0 +1,7 @@
+# Obsidian — machine-specific state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+
+# Claudian — AI session data
+.claudian/sessions/

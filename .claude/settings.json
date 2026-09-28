@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(obsidian tags *)",
+      "Bash(obsidian search *)",
+      "Bash(obsidian help *)",
+      "Bash(obsidian orphans *)",
+      "Bash(obsidian unresolved *)",
+      "Bash(git -C \"/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK\" status)",
+      "Bash(git -C \"/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK\" add .)"
+    ]
+  }
+}
