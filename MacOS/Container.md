@@ -33,4 +33,7 @@ Create a Debian 13 container named `develop`:
 container machine create debian13:latest --name develop
 ```
 
+container machine create debian13:latest --platform linux/amd64 --memory 16G --cpus 8  --name develop
+
+
 #MACOS

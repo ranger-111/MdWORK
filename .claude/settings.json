@@ -7,7 +7,11 @@
       "Bash(obsidian orphans *)",
       "Bash(obsidian unresolved *)",
       "Bash(git -C \"/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK\" status)",
-      "Bash(git -C \"/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK\" add .)"
+      "Bash(git -C \"/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK\" add .)",
+      "Bash(git -C '/Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK' commit -m ' *)",
+      "Bash(obsidian files *)",
+      "Bash(ls /Users/I775185/Library/Mobile Documents/iCloud~md~obsidian/Documents/MdWORK/)",
+      "Read(//Users/I775185/Library/**)"
     ]
   }
 }

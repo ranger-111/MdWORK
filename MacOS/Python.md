@@ -64,6 +64,10 @@ Install a specific version:
 uv add ansible-core==2.15.13
 ```
 
+```bash
+uv add "molecule-plugins[podman]"
+```
+
 Check Ansible version:
 
 ```bash

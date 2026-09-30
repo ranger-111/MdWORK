@@ -1,6 +1,9 @@
 
 # AGENT.md
 
+> [!important] This is not a knowledge note
+> This file is **agent configuration** — instructions and context for LLM agents working in this vault. It is versioned in git alongside the vault but is not part of the knowledge base. Do not link to it from content notes.
+
 Instructions and context for LLM agents working in this Obsidian vault.
 
 ---
@@ -16,8 +19,9 @@ Personal knowledge base for a developer working primarily on macOS with a German
 
 ## Folder Structure
 
-| Folder | Purpose |
-|--------|---------|
+| Folder / File | Purpose |
+|---------------|---------|
+| `Inbox.md` | Raw capture — ideas, links, and misc that haven't been processed yet |
 | `MacOS/` | macOS tips, keyboard setup, installed tools, shell config |
 | `Projekte/` | One subfolder per project, e.g. `Projekte/SWIFT/` |
 
@@ -82,6 +86,7 @@ Personal knowledge base for a developer working primarily on macOS with a German
 
 - Ask before creating new folders
 - Follow the existing pattern: `Projekte/<NAME>/Notes.md` for projects, `<Topic>/<Subtopic>.md` for reference
+- Raw captures (ideas, links, misc) that haven't been filed yet belong in `Inbox.md` at the vault root
 
 ### What NOT to do
 
@@ -91,13 +96,30 @@ Personal knowledge base for a developer working primarily on macOS with a German
 
 ---
 
-## Key Reference Files
+## Available Tools
 
-| File | Contents |
-|------|----------|
-| [[MacOS/Tips]] | Shell keymap, German keyboard shortcuts, special characters |
-| [[MacOS/Karabiner]] | Karabiner-Elements config (Linux key profile) |
-| [[MacOS/Homebrew]] | Installed Homebrew packages and casks |
-| [[Projekte/SWIFT/Notes]] | SAP SWIFT project notes |
+### Obsidian CLI
+The `obsidian` CLI is enabled and available. Prefer it over manual file reads for vault-wide operations:
 
-#AGENT
+```bash
+obsidian tags sort=count counts     # audit tags
+obsidian orphans                    # find unlinked notes
+obsidian unresolved                 # find broken links
+obsidian files                      # list all notes
+obsidian search query="..."         # search vault content
+```
+
+### Git
+The vault is a git repository. Use standard `git` commands for history and diffs. The `.gitignore` excludes `workspace.json`, cache, and `.claudian/sessions/`.
+
+### Skills
+The following Claudian skills are installed and should be used proactively:
+
+| Skill | Use for |
+|-------|---------|
+| `obsidian-cli` | Vault operations, auditing, plugin dev |
+| `obsidian-markdown` | Callouts, embeds, wikilinks, properties |
+| `obsidian-bases` | Creating `.base` database views |
+| `json-canvas` | Creating `.canvas` visual maps |
+| `defuddle` | Extracting clean Markdown from web pages |
+| `knap` | Generating notes from templates and data |
