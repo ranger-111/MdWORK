@@ -3,6 +3,15 @@
 
 Apple's native container tool for running Linux containers on macOS (available from macOS 26).
 
+
+## Update
+
+```bash
+container system stop
+/usr/local/bin/update-container.sh
+```
+
+
 ## Setup
 
 Start the container system:
@@ -33,7 +42,8 @@ Create a Debian 13 container named `develop`:
 container machine create debian13:latest --name develop
 ```
 
+```bash
 container machine create debian13:latest --platform linux/amd64 --memory 16G --cpus 8  --name develop
-
+```
 
 #MACOS
