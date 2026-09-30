@@ -46,4 +46,10 @@ container machine create debian13:latest --name develop
 container machine create debian13:latest --platform linux/amd64 --memory 16G --cpus 8  --name develop
 ```
 
+Quick User Setup
+
+```bash
+mkdir -p ~/.ssh/ ; chmod 700 ~/.ssh/ ; cp /Users/`(whoami)`/.ssh/authorized_keys ~/.ssh/
+```
+
 #MACOS
