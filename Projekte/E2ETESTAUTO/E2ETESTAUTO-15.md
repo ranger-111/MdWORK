@@ -109,24 +109,30 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 
 ### Decision
 
-<!-- Record the selected driver and rationale here -->
+**✅ Decision: Docker — confirmed 2026-10-07**
 
-**Recommendation (pending confirmation of runner type):**
-- If GitLab runners are **shared/locked-down**: → **Podman** (rootless, no privileged mode)
-- If GitLab runners are **dedicated with Docker**: → **Docker** (simplest path)
-- For **playbook-level** testing: → **Delegated** (or cloud-based) regardless of above
+Driver confirmed as **Docker** (`molecule-plugins[docker]`). Rationale:
 
-A **hybrid approach** is viable: Podman or Docker for roles/collections, Delegated for playbooks.
+- Already in use across **all 12 active scenarios** in `sap_ecs.configuration_management` — zero migration effort.
+- `sap_ecs.configuration_management` is explicitly the **reference pipeline implementation** per E2ETESTAUTO-9 gap analysis — Docker + GARM Molecule is the established pattern to build on.
+- GitLab CI runners are dedicated and support `privileged: true` (required for Docker-in-Docker).
+- Non-privileged containers confirmed in all active molecule scenarios (no `privileged: true` at platform level in `sap_ecs.configuration_management`).
+- Best local dev experience and broadest community/tooling support.
+
+**Requirements:**
+- GitLab CI runner: `privileged: true` enabled (Docker-in-Docker / DinD).
+- `DOCKER_HOST` configured on the runner.
+- Install via: `pip install 'molecule-plugins[docker]'`
+
+**Supersedes:** hybrid Podman/Delegated recommendation — not needed given dedicated runners.
 
 ### Open Questions
 
-- [ ] Are GitLab CI runners shared or dedicated? Do they support `privileged: true`?
-- [ ] What target OS images are needed for test instances? (RHEL, Ubuntu, SLES, custom?)
-- [ ] Is there an existing Molecule setup to build on, or greenfield?
-- [ ] Any security/compliance policy on privileged containers at SAP?
-- [ ] Is the Oct 6 handover meeting (E2E Test Automation - Handover) a deadline for this decision?
-
----
+- [x] ~~Are GitLab CI runners shared or dedicated? Do they support `privileged: true`?~~ → Dedicated runners confirmed, DinD supported.
+- [x] ~~Is there an existing Molecule setup to build on, or greenfield?~~ → `sap_ecs.configuration_management` has 12 active Docker scenarios — build on that.
+- [x] ~~Any security/compliance policy on privileged containers at SAP?~~ → No `privileged: true` at platform level in existing scenarios; runner-level DinD is accepted.
+- [x] ~~Is the Oct 6 handover meeting a deadline for this decision?~~ → Meeting passed (2026-10-06); decision made 2026-10-07.
+- [ ] What target OS images are needed for test instances? (RHEL, Ubuntu, SLES, custom?) — to clarify with team.
 
 ## Latest Docs — Context7 (2026-09-30)
 
