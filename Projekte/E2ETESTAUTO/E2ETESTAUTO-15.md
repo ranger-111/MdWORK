@@ -66,6 +66,8 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Install:** `pip install molecule molecule-plugins[docker]`
 - **GitLab CI requirement:** Runner with `privileged: true` and `DOCKER_HOST` configured.
 
+- **SAP-provided images:** SAP provides Docker images that mimic real VM instances — **RHEL** and **SLES**. These are used directly as Molecule platform images, ensuring test fidelity without custom image builds.
+
 #### Podman
 
 - **GitLab CI fit:** Strong fit for enterprise/rootless environments. Runs **without a daemon** and supports rootless containers — no `privileged: true` needed on the runner.
@@ -132,7 +134,7 @@ Driver confirmed as **Docker** (`molecule-plugins[docker]`). Rationale:
 - [x] ~~Is there an existing Molecule setup to build on, or greenfield?~~ → `sap_ecs.configuration_management` has 12 active Docker scenarios — build on that.
 - [x] ~~Any security/compliance policy on privileged containers at SAP?~~ → No `privileged: true` at platform level in existing scenarios; runner-level DinD is accepted.
 - [x] ~~Is the Oct 6 handover meeting a deadline for this decision?~~ → Meeting passed (2026-10-06); decision made 2026-10-07.
-- [ ] What target OS images are needed for test instances? (RHEL, Ubuntu, SLES, custom?) — to clarify with team.
+- [x] ~~What target OS images are needed for test instances?~~ → SAP-provided Docker images mimicking real VM instances: **RHEL** and **SLES**. No custom build required.
 
 ## Latest Docs — Context7 (2026-09-30)
 
