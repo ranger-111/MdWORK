@@ -65,8 +65,11 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Cons:** DinD requires privileged containers; less suitable for locked-down or shared GitLab runners.
 - **Install:** `pip install molecule molecule-plugins[docker]`
 - **GitLab CI requirement:** Runner with `privileged: true` and `DOCKER_HOST` configured.
-
 - **SAP-provided images:** SAP provides Docker images that mimic real VM instances — **RHEL** and **SLES**. These are used directly as Molecule platform images, ensuring test fidelity without custom image builds.
+  - **Registry:** `cia-docker-live.int.repositories.cloud.sap`
+  - **Package:** `multicloud-image-container`
+  - **UI:** [https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages](https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages)
+  - ⚠️ **Images werden regelmäßig aktualisiert — Image-Tags immer vor Verwendung in der Registry prüfen. Keine festen Tags in `molecule.yml` hardcoden; stattdessen den aktuellen Tag aus der Registry ermitteln (z. B. via CI-Step oder Wrapper-Script).**
 
 #### Podman
 
