@@ -70,6 +70,29 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
   - **Package:** `multicloud-image-container`
   - **UI:** [https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages](https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages)
   - ⚠️ **Images werden regelmäßig aktualisiert — Image-Tags immer vor Verwendung in der Registry prüfen. Keine festen Tags in `molecule.yml` hardcoden; stattdessen den aktuellen Tag aus der Registry ermitteln (z. B. via CI-Step oder Wrapper-Script).**
+- **Current `molecule.yml`** *(Context7-verified 2026-09-30):*
+  ```yaml
+  driver:
+    name: docker
+
+  platforms:
+    # Minimal container
+    - name: instance-minimal
+      image: quay.io/centos/centos:stream9
+      pre_build_image: true
+
+    # Systemd container (needs privileged + cgroup mount)
+    - name: instance-systemd
+      image: quay.io/centos/centos:stream8
+      privileged: true
+      volumes:
+        - "/sys/fs/cgroup:/sys/fs/cgroup:rw"
+      command: "/usr/sbin/init"
+      cgroupns_mode: host
+      tty: true
+  ```
+  > **GitLab CI note:** `privileged: true` at the *platform level* is for systemd testing inside the container — but GitLab CI still requires the **runner** to be privileged for Docker-in-Docker. Both layers need privilege consideration.
+- **Docs confirm:** Install string correct (quote it: `'molecule-plugins[docker]'` to prevent shell glob expansion). Platform-level `privileged: true` applies only to systemd containers, not the runner.
 
 #### Podman
 
@@ -78,6 +101,39 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Cons:** Slightly more setup variance than Docker; some tooling still assumes Docker conventions.
 - **Install:** `pip install molecule molecule-plugins[podman]` + `ansible-galaxy collection install containers.podman`
 - **GitLab CI requirement:** Podman available on runner image (or use a Podman-based CI image).
+- **Current `molecule.yml`** *(Context7-verified 2026-09-30):*
+  ```yaml
+  driver:
+    name: podman
+
+  platforms:
+    # Rootless — no privileged runner needed
+    - name: instance-basic
+      image: quay.io/fedora/fedora:39
+      pre_build_image: true
+
+    # Systemd container (privileged at container level only)
+    - name: instance-systemd
+      image: centos:8
+      privileged: true
+      command: "/usr/sbin/init"
+      systemd: true
+
+    # Advanced options
+    - name: instance-advanced
+      image: registry.example.com/myapp:tag
+      volumes:
+        - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+      security_opts:
+        - "label=disable"
+      cgroup_manager: cgroupfs
+      storage_driver: overlay
+      tmpfs:
+        - /tmp
+        - /run
+  ```
+  > Uses the `containers.podman` Ansible collection. Containers are labeled `owner=molecule` and auto-cleaned on `molecule destroy` / `molecule reset`.
+- **Docs confirm:** Rootless basic containers run without a privileged runner; systemd containers need `privileged: true` at the *platform level* only.
 
 #### Delegated
 
@@ -86,6 +142,41 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Cons:** Must author and maintain `create.yml`/`destroy.yml`. More boilerplate upfront.
 - **Install:** Built-in — no extra packages.
 - **GitLab CI requirement:** None beyond a standard runner.
+- **Current config & instance-config API** *(Context7-verified 2026-09-30):*
+  ```yaml
+  driver:
+    name: default   # or: name: de
+  ```
+  The `create.yml` must output this instance-config structure (for SSH targets):
+  ```yaml
+  - address: ssh_endpoint
+    identity_file: ssh_identity_file  # mutually exclusive with password
+    instance: instance_name
+    port: ssh_port_as_string
+    user: ssh_user
+    shell_type: sh
+    become_method: sudo               # optional
+    become_pass: password_if_required # optional
+  ```
+  Custom provisioner playbooks:
+  ```yaml
+  provisioner:
+    name: ansible
+    playbooks:
+      create: create.yml
+      converge: converge.yml
+      destroy: destroy.yml
+  ```
+  For unmanaged (pre-existing) instances (no create/destroy needed):
+  ```yaml
+  driver:
+    name: default
+    options:
+      managed: False
+      ansible_connection_options:
+        ansible_connection: local   # or ssh, docker, etc.
+  ```
+- **Docs confirm:** Both `de` and `default` are valid driver names; `create.yml`/`destroy.yml` must follow the instance-config API exactly.
 
 #### Cloud-based
 
@@ -93,6 +184,7 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Pros:** Most realistic test targets, good for full playbook validation.
 - **Cons:** Slow (VM boot time), cost per test run, requires cloud credentials in CI. Overkill for role unit tests.
 - **Install:** Built-in delegated + relevant Ansible cloud collection.
+- **Docs confirm:** Besides the delegated route, `molecule-plugins[ec2]` exists as a **direct plugin** option (install alongside others, e.g. `pip install 'molecule-plugins[docker,podman,ec2]'`).
 
 ---
 
@@ -141,136 +233,11 @@ Driver confirmed as **Docker** (`molecule-plugins[docker]`). Rationale:
 
 ## Latest Docs — Context7 (2026-09-30)
 
-> Sources: `/ansible/molecule` (Score 84, High reputation) · `/ansible-community/molecule-plugins` (Score 73, High reputation)
+> Verified against current Molecule docs via Context7 on **2026-09-30**. Sources: `/ansible/molecule` (Score 84, High reputation) · `/ansible-community/molecule-plugins` (Score 73, High reputation).
+>
+> Driver architecture, `molecule.yml` examples, and doc-confirmations are now folded directly into the **Findings** sections above (per driver). Summary of what the docs confirmed vs. the original note:
 
-### Confirmed: Driver Architecture
-
-Molecule's **Ansible-native approach** (current default) uses `driver: name: default` (also aliased as `de`). Docker and Podman are external plugins installed via `molecule-plugins`.
-
-```bash
-# Single driver
-pip install 'molecule-plugins[docker]'
-pip install 'molecule-plugins[podman]'
-
-# Multiple at once
-pip install 'molecule-plugins[docker,podman,ec2]'
-```
-
-> ⚠️ Note: Quotes around `molecule-plugins[...]` are required in most shells to prevent glob expansion.
-
----
-
-### Docker Driver — Current molecule.yml
-
-```yaml
-driver:
-  name: docker
-
-platforms:
-  # Minimal container
-  - name: instance-minimal
-    image: quay.io/centos/centos:stream9
-    pre_build_image: true
-
-  # Systemd container (needs privileged + cgroup mount)
-  - name: instance-systemd
-    image: quay.io/centos/centos:stream8
-    privileged: true
-    volumes:
-      - "/sys/fs/cgroup:/sys/fs/cgroup:rw"
-    command: "/usr/sbin/init"
-    cgroupns_mode: host
-    tty: true
-```
-
-> **GitLab CI note:** `privileged: true` at the *platform level* is for systemd testing inside the container — but GitLab CI still requires the **runner** to be privileged for Docker-in-Docker. Both layers need privilege consideration.
-
----
-
-### Podman Driver — Current molecule.yml
-
-```yaml
-driver:
-  name: podman
-
-platforms:
-  # Rootless — no privileged runner needed
-  - name: instance-basic
-    image: quay.io/fedora/fedora:39
-    pre_build_image: true
-
-  # Systemd container (privileged at container level only)
-  - name: instance-systemd
-    image: centos:8
-    privileged: true
-    command: "/usr/sbin/init"
-    systemd: true
-
-  # Advanced options
-  - name: instance-advanced
-    image: registry.example.com/myapp:tag
-    volumes:
-      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
-    security_opts:
-      - "label=disable"
-    cgroup_manager: cgroupfs
-    storage_driver: overlay
-    tmpfs:
-      - /tmp
-      - /run
-```
-
-> Podman driver uses the `containers.podman` Ansible collection. Containers are labeled `owner=molecule` and auto-cleaned on `molecule destroy` / `molecule reset`.
-
----
-
-### Delegated Driver — Current Config & Instance-Config API
-
-```yaml
-driver:
-  name: default   # or: name: de
-```
-
-The `create.yml` must output this instance-config structure (for SSH targets):
-
-```yaml
-- address: ssh_endpoint
-  identity_file: ssh_identity_file  # mutually exclusive with password
-  instance: instance_name
-  port: ssh_port_as_string
-  user: ssh_user
-  shell_type: sh
-  become_method: sudo               # optional
-  become_pass: password_if_required # optional
-```
-
-Custom provisioner playbooks:
-
-```yaml
-provisioner:
-  name: ansible
-  playbooks:
-    create: create.yml
-    converge: converge.yml
-    destroy: destroy.yml
-```
-
-For unmanaged (pre-existing) instances (no create/destroy needed):
-
-```yaml
-driver:
-  name: default
-  options:
-    managed: False
-    ansible_connection_options:
-      ansible_connection: local   # or ssh, docker, etc.
-```
-
----
-
-### Docs-Confirmed Changes vs. Note Findings
-
-| Topic | Note says | Docs confirm |
+| Topic | Note said | Docs confirm |
 |-------|-----------|-------------|
 | Delegated driver name | `name: de` | ✅ Both `de` and `default` work |
 | Docker install | `pip install molecule molecule-plugins[docker]` | ✅ Correct (add quotes: `'molecule-plugins[docker]'`) |
