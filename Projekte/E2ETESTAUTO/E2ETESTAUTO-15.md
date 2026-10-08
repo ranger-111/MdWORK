@@ -69,8 +69,7 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
   - **Registry:** `cia-docker-live.int.repositories.cloud.sap`
   - **Package:** `multicloud-image-container`
   - **UI:** [https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages](https://cia-docker-live.int.repositories.cloud.sap/ui/packages?name=multicloud-image-container&type=packages)
-  - ⚠️ **Images werden regelmäßig aktualisiert — Image-Tags immer vor Verwendung in der Registry prüfen. Keine festen Tags in `molecule.yml` hardcoden; stattdessen den aktuellen Tag aus der Registry ermitteln (z. B. via CI-Step oder Wrapper-Script).**
-- **Current `molecule.yml`** *(Context7-verified 2026-09-30):*
+- **Current `molecule.yml`**
   ```yaml
   driver:
     name: docker
@@ -101,7 +100,7 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Cons:** Slightly more setup variance than Docker; some tooling still assumes Docker conventions.
 - **Install:** `pip install molecule molecule-plugins[podman]` + `ansible-galaxy collection install containers.podman`
 - **GitLab CI requirement:** Podman available on runner image (or use a Podman-based CI image).
-- **Current `molecule.yml`** *(Context7-verified 2026-09-30):*
+- **Current `molecule.yml`**
   ```yaml
   driver:
     name: podman
@@ -142,7 +141,7 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 - **Cons:** Must author and maintain `create.yml`/`destroy.yml`. More boilerplate upfront.
 - **Install:** Built-in — no extra packages.
 - **GitLab CI requirement:** None beyond a standard runner.
-- **Current config & instance-config API** *(Context7-verified 2026-09-30):*
+- **Current config & instance-config API**
   ```yaml
   driver:
     name: default   # or: name: de
@@ -206,7 +205,7 @@ This means the architectural decision is: **use a container plugin (Docker/Podma
 
 ### Decision
 
-**✅ Decision: Docker — confirmed 2026-10-07**
+**✅ Decision: Docker 
 
 Driver confirmed as **Docker** (`molecule-plugins[docker]`). Rationale:
 
@@ -223,28 +222,6 @@ Driver confirmed as **Docker** (`molecule-plugins[docker]`). Rationale:
 
 **Supersedes:** hybrid Podman/Delegated recommendation — not needed given dedicated runners.
 
-### Open Questions
-
-- [x] ~~Are GitLab CI runners shared or dedicated? Do they support `privileged: true`?~~ → Dedicated runners confirmed, DinD supported.
-- [x] ~~Is there an existing Molecule setup to build on, or greenfield?~~ → `sap_ecs.configuration_management` has 12 active Docker scenarios — build on that.
-- [x] ~~Any security/compliance policy on privileged containers at SAP?~~ → No `privileged: true` at platform level in existing scenarios; runner-level DinD is accepted.
-- [x] ~~Is the Oct 6 handover meeting a deadline for this decision?~~ → Meeting passed (2026-10-06); decision made 2026-10-07.
-- [x] ~~What target OS images are needed for test instances?~~ → SAP-provided Docker images mimicking real VM instances: **RHEL** and **SLES**. No custom build required.
-
-## Latest Docs — Context7 (2026-09-30)
-
-> Verified against current Molecule docs via Context7 on **2026-09-30**. Sources: `/ansible/molecule` (Score 84, High reputation) · `/ansible-community/molecule-plugins` (Score 73, High reputation).
->
-> Driver architecture, `molecule.yml` examples, and doc-confirmations are now folded directly into the **Findings** sections above (per driver). Summary of what the docs confirmed vs. the original note:
-
-| Topic | Note said | Docs confirm |
-|-------|-----------|-------------|
-| Delegated driver name | `name: de` | ✅ Both `de` and `default` work |
-| Docker install | `pip install molecule molecule-plugins[docker]` | ✅ Correct (add quotes: `'molecule-plugins[docker]'`) |
-| Podman rootless | "no privileged needed on runner" | ✅ Confirmed — basic containers run rootless |
-| Podman systemd | Needs privileged | ✅ `privileged: true` at platform level, not runner level |
-| Delegated: create/destroy required | ✅ | ✅ Must follow instance-config API exactly |
-| molecule-plugins EC2 | "Cloud-based via delegated" | ➕ `molecule-plugins[ec2]` exists as a direct plugin option |
 
 ---
 
