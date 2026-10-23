@@ -98,7 +98,7 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 - [ ] Which **branches**? (MR/PR validation vs. default)
 - [ ] Which **stages**? (G1 security stage in e2e-governance)
 - [ ] Git **history** scan vs. working-tree only?
-- [ ] How are findings **triaged** / allowlisted? (`.gitleaks.toml` allowlist vs. trufflehog verification)
+- [ ] How are findings **triaged** / allowlisted? (`.gitleaks.toml` / `.betterleaks.toml` allowlist)
 
 ### D3 — Severity / enforcement
 - [ ] Blocking (G1) **from day one**, or **warn-first → blocking**?
@@ -140,6 +140,6 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 - **Quality Standards (§1.5 secrets, §2.4 complementary):** `docs/e2e-test-automation/Ansible-Quality_Standards-Conventions.md`
 - **Target Architecture (gap, e2e-governance layer, change summary):** `docs/e2e-test-automation/Ansible-Collection-Target-Architecture.md`
 - **Gate criteria (secret scanning = blocking):** `docs/e2e-test-automation/define-gate-stages-blocking-criteria.md` (E2ETESTAUTO-33)
-- **gitleaks:** https://github.com/gitleaks/gitleaks — reporting formats incl. `junit`, `sarif`; `.gitleaks.toml` allowlists
-- **trufflehog:** https://github.com/trufflesecurity/trufflehog — `--results=verified`, `--fail` (exit 183), `sarif`/`json`
+- **betterleaks:** https://github.com/betterleaks/betterleaks — `.gitleaks.toml`-kompatibel; native `junit`, `sarif`; MIT
+- **gitleaks (reference):** https://github.com/gitleaks/gitleaks — Maintenance-Mode; reporting formats incl. `junit`, `sarif`
 - [Jira Board — E2ETESTAUTO](https://jira.tools.sap/secure/RapidBoard.jspa?rapidView=63480&projectKey=E2ETESTAUTO)
