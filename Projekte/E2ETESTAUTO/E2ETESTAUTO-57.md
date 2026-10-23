@@ -54,42 +54,44 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 
 | Candidate | Type | Status | Notes |
 |-----------|------|--------|-------|
-| **gitleaks** | OSS | ✅ SAP approved | Native JUnit/SARIF output; MIT; offline |
+| **betterleaks** | OSS | ✅ SAP approved | Aktiver Nachfolger von gitleaks; `.gitleaks.toml`-kompatibel; native JUnit/SARIF; MIT |
+| **gitleaks** | OSS | ✅ SAP approved | Feature-complete, Maintenance-Mode; Security-Patches bis auf weiteres |
 | **trufflehog** | OSS | ❌ Not in MySoftwareHub | Ruled out |
 | **GitHub Secret Scanning** | Platform | ✅ Already active | Native GitHub feature — **already running on the repos** |
-| **SAP-internal approved scanner** | Internal | ❓ TBD | Name/approval still unclear |
 
 ## Scoring Criteria — preliminary findings (2026-10-21)
 
-> Sources: Context7 (gitleaks `/gitleaks/gitleaks`, both current docs) + repo Target Architecture & Quality Standards.
-> **SAP MySoftwareHub status (2026-10-23):** gitleaks **approved** ✅ — trufflehog **Not Found / not approved** ❌
+> Sources: Context7 + repo Target Architecture & Quality Standards.
+> **SAP MySoftwareHub status (2026-10-23):** betterleaks **approved** ✅ — gitleaks **approved** ✅ — trufflehog **Not Found** ❌
 > **GitHub Secret Scanning:** already active on the repos ✅ (platform-native, no install required)
+> **gitleaks status:** feature-complete, Maintenance-Mode (Security-Patches only); maintainer shifting focus to betterleaks.
 
-| Criterion | gitleaks | GitHub Secret Scanning |
-|-----------|----------|----------------------|
-| **Detection coverage** | Regex + entropy + keyword rules; extensible via `.gitleaks.toml`. Scans **git history + filesystem**. | Pattern-based; covers GitHub's curated list of known secret types (tokens, keys, certs); scans entire git history on push. |
-| **False-positive rate** | Moderate; no live verification → tunable via allowlists. | Low for supported patterns (curated, high-confidence); limited to known provider patterns. |
-| **GARM / e2e-governance fit** | **Strong** — native JUnit matches the reporting contract; feeds `e2e-gate-evaluator` directly; offline; runs in GARM pipeline. | **Weak as a GARM gate** — GitHub-platform feature, not a CI job artifact; no JUnit output; alerts via GitHub UI/webhooks, not pipeline exit codes. Cannot directly block a GARM gate stage. |
-| **CI / reporting (incl. JUnit XML)** | **Native: `json`, `csv`, `junit`, `sarif`.** Direct fit for JUnit reporting contract (E2ETESTAUTO-17). | No JUnit output; GitHub Alerts UI only. Not pluggable into `e2e-gate-evaluator`. |
-| **Complementary / overlap** | Runs in-pipeline (pre-merge gate, G1 blocking). Catches secrets before they reach GitHub. | Runs post-push on GitHub side. Catches secrets that reach the remote. **Complementary layer, not a replacement.** |
-| **Licensing / SAP approval** | **MIT** ✅ — **SAP MySoftwareHub: approved** ✅ | GitHub platform feature — no separate approval needed; already in use. |
+| Criterion | betterleaks | gitleaks | GitHub Secret Scanning |
+|-----------|-------------|----------|----------------------|
+| **Development status** | ✅ Actively developed (v1.8.1 Aug 2026) | ⚠️ Maintenance-only (v8.30.1 Mar 2026) — security patches only | Platform-managed by GitHub |
+| **Detection coverage** | Regex + entropy + keyword; `.gitleaks.toml`-kompatibel; zusätzlich Secret-Validierung & Analyse | Regex + entropy + keyword; extensible via `.gitleaks.toml` | Curated patterns for known secret types; scans entire git history on push |
+| **False-positive rate** | Moderate + optionale Secret-Validierung (bessere FP-Reduktion) | Moderate; tunable via allowlists | Low for supported patterns; limited to known provider patterns |
+| **GARM / e2e-governance fit** | **Strong** — JUnit-native; feeds `e2e-gate-evaluator`; offline | **Strong** — JUnit-native; feeds `e2e-gate-evaluator`; offline | **Weak** — kein JUnit, kein Pipeline-Exit-Code, kann keinen G1-Gate blockieren |
+| **CI / reporting (incl. JUnit XML)** | Native: `json`, `csv`, `junit`, `sarif` | Native: `json`, `csv`, `junit`, `sarif` | GitHub Alerts UI only — not pluggable into `e2e-gate-evaluator` |
+| **Migration** | Drop-in: `.gitleaks.toml` und CLI-Flags kompatibel | — | — |
+| **Licensing / SAP approval** | **MIT** ✅ — **MySoftwareHub: approved** ✅ | **MIT** ✅ — **MySoftwareHub: approved** ✅ | Platform feature — kein separates Approval nötig |
 
 ##### Updated picture (2026-10-23)
 
-GitHub Secret Scanning is already active → it provides a **platform-level backstop** (post-push). That does **not** replace the need for a GARM pipeline gate: GitHub Scanning has no JUnit output, no pipeline exit code, and cannot block a G1 gate stage.
+**Betterleaks ist der bevorzugte Kandidat für den blocking G1-Gate.**
 
-**Decision: gitleaks as the blocking G1 gate + GitHub Secret Scanning as the complementary platform layer.**
+- Aktiv entwickelt, MySoftwareHub-approved, MIT, JUnit-nativ, `.gitleaks.toml`-kompatibel (Migration von gitleaks = kein Rewrite)
+- gitleaks bleibt valide Fallback-Option falls betterleaks im Enterprise-Track-Record-Check nicht besteht
+- GitHub Secret Scanning: post-push platform-side backstop — komplementäre Schicht, kein Ersatz für den Pipeline-Gate
 
-- gitleaks: in-pipeline, pre-merge, blocking, JUnit-native → feeds `e2e-gate-evaluator`
-- GitHub Secret Scanning: post-push, platform-side, advisory → catches anything that slips through
-
-This is a defense-in-depth pattern, not duplication. Both controls have distinct trigger points and outputs.
+**Defense-in-Depth:**
+- betterleaks: in-pipeline, pre-merge, blocking, JUnit-native → feeds `e2e-gate-evaluator`
+- GitHub Secret Scanning: post-push, platform-side, advisory → fängt was trotzdem durchkommt
 
 ## Decisions to Make
 
 ### D1 — Tool selection
-- [ ] Which tool (or hybrid)? → rationale required
-- Preliminary lean: **gitleaks** for the blocking gate (JUnit-native, MIT, offline). Confirm after SAP-internal scanner is assessed.
+- [ ] Which tool? → **Lean: betterleaks** (aktiv entwickelt, MySoftwareHub-approved, MIT, JUnit-nativ, `.gitleaks.toml`-kompatibel). gitleaks als Fallback falls betterleaks Enterprise-Track-Record-Check nicht besteht. Rationale muss dokumentiert werden.
 
 ### D2 — Scan scope
 - [ ] Which **paths** are scanned? (whole repo vs. changed files)
@@ -124,11 +126,12 @@ This is a defense-in-depth pattern, not duplication. Both controls have distinct
 
 - [ ] **QS section reference mismatch:** the ticket cites "Quality Standards §1.4", but §1.4 is the *naming matrix*. The secret-handling discipline is in **§1.5**, and the pipeline-complementary relationship is **§2.4**. Confirm the intended reference before writing it up.
 - [ ] **Confirm Mario vs. Martin Dietner** — reporter here is "Mario Dietner"; E2ETESTAUTO-33 sign-off listed "Martin Dietner (standards)". Same person?
-- [x] ~~Which **SAP-internal scanner** is the approved candidate?~~ → **moot for D1**: gitleaks is approved and selected; SAP-internal column no longer blocks the decision.
+- [x] ~~Which **SAP-internal scanner** is the approved candidate?~~ → moot; betterleaks approved und ausgewählt.
 - [ ] **Add `e2e-secret-scan` row** to the Target Architecture change summary table (currently missing).
-- [x] ~~Confirm **trufflehog licensing** and SAP CI egress~~ → **resolved (2026-10-23):** trufflehog not found in SAP MySoftwareHub → ruled out entirely.
+- [x] ~~Confirm **trufflehog licensing** and SAP CI egress~~ → resolved: not in MySoftwareHub → ruled out.
 - [ ] The referenced `Ansible-Custom-Rules-Implementation.md §3.6` is **not yet in the repo** — track where e2e-secret-scan gets specified.
-- [ ] Alignment session with Mario (per Diana's note on E2ETESTAUTO-33, 2026-10-15) — relevant here?
+- [ ] Alignment session with Mario (per Diana's note on E2ETESTAUTO-33, 2026-10-15) — relevant hier?
+- [ ] **betterleaks lokal testen** — CLI-Verhalten, FP-Rate auf dem Ansible-Repo, `.gitleaks.toml`-Kompatibilität verifizieren vor finaler D1-Entscheidung.
 
 ## Links & References
 
