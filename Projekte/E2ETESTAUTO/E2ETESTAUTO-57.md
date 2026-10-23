@@ -63,6 +63,7 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 ## Scoring Criteria — preliminary findings (2026-10-21)
 
 > Sources: Context7 (gitleaks `/gitleaks/gitleaks`, trufflehog `/trufflesecurity/trufflehog`, both current docs) + repo Target Architecture & Quality Standards. SAP-internal column pending.
+> **SAP MySoftwareHub status (2026-10-23):** gitleaks **approved** ✅ — trufflehog **Not Found / not approved** ❌
 
 | Criterion | gitleaks | trufflehog | SAP-internal |
 |-----------|----------|------------|:------------:|
@@ -71,13 +72,15 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 | **GARM / e2e-governance fit** | **Strong** — native JUnit matches the reporting contract (same as Checkov/molecule); feeds `e2e-gate-evaluator` directly; offline. | Moderate — **no native JUnit** (json/sarif/github-actions); needs a conversion step. **Verification needs network egress** to provider APIs → may be restricted on SAP CI runners. | TBD |
 | **CI / reporting (incl. JUnit XML)** | **Native formats: `json`, `csv`, `junit`, `sarif`.** Best fit for the JUnit reporting contract (E2ETESTAUTO-17). | `json`, `sarif`, `github-actions`; **no JUnit**. `--fail` → exit 183 on findings. GitLab CI example in docs. | TBD |
 | **Maintainability** | Single Go binary; `.gitleaks.toml` (extend default rules); no network dependency; low overhead. | Single binary; include/exclude detectors, config file; verification adds network dependency + some nondeterminism. | TBD |
-| **Licensing / SAP approval** | **MIT** (permissive) — favorable. ⚠️ confirm SAP-internal approval status. | ⚠️ **AGPL-3.0** (copyleft) — needs SAP legal/approval review. Confirm before selection. | TBD |
+| **Licensing / SAP approval** | **MIT** ✅ — **SAP MySoftwareHub: approved** ✅ | ⚠️ **AGPL-3.0** (copyleft) — **SAP MySoftwareHub: Not Found / not approved** ❌ — **ruled out** | TBD |
 
-### Emerging option (not a decision yet)
+##### Emerging option (not a decision yet)
 
-A **hybrid** is worth considering: **gitleaks as the blocking G1 gate** (native JUnit → gate-evaluator, MIT, offline), optionally enriched by **trufflehog verification** as an advisory step where network egress is allowed. gitleaks alone satisfies the reporting contract with the least friction; trufflehog's verification is the strongest FP reducer but carries licensing + egress questions.
+~~A **hybrid** is worth considering: **gitleaks as the blocking G1 gate** (native JUnit → gate-evaluator, MIT, offline), optionally enriched by **trufflehog verification** as an advisory step where network egress is allowed.~~
 
----
+**Updated (2026-10-23):** trufflehog is **ruled out** — not found / not approved in SAP MySoftwareHub. The hybrid option is no longer viable.
+
+**Decision lean: gitleaks only.** It satisfies the JUnit reporting contract natively, is MIT-licensed, approved, and fully offline. The tradeoff (no live credential verification → moderate FP rate) is acceptable given tunable allowlists via `.gitleaks.toml`.
 
 ## Decisions to Make
 
@@ -118,13 +121,11 @@ A **hybrid** is worth considering: **gitleaks as the blocking G1 gate** (native 
 
 - [ ] **QS section reference mismatch:** the ticket cites "Quality Standards §1.4", but §1.4 is the *naming matrix*. The secret-handling discipline is in **§1.5**, and the pipeline-complementary relationship is **§2.4**. Confirm the intended reference before writing it up.
 - [ ] **Confirm Mario vs. Martin Dietner** — reporter here is "Mario Dietner"; E2ETESTAUTO-33 sign-off listed "Martin Dietner (standards)". Same person?
-- [ ] Which **SAP-internal scanner** is the approved candidate? (name, approval reference, capabilities) — blocks the SAP-internal matrix column.
+- [x] ~~Which **SAP-internal scanner** is the approved candidate?~~ → **moot for D1**: gitleaks is approved and selected; SAP-internal column no longer blocks the decision.
 - [ ] **Add `e2e-secret-scan` row** to the Target Architecture change summary table (currently missing).
-- [ ] Confirm **trufflehog licensing** (AGPL-3.0?) and whether SAP CI runners permit **network egress** for verification.
+- [x] ~~Confirm **trufflehog licensing** and SAP CI egress~~ → **resolved (2026-10-23):** trufflehog not found in SAP MySoftwareHub → ruled out entirely.
 - [ ] The referenced `Ansible-Custom-Rules-Implementation.md §3.6` is **not yet in the repo** — track where e2e-secret-scan gets specified.
 - [ ] Alignment session with Mario (per Diana's note on E2ETESTAUTO-33, 2026-10-15) — relevant here?
-
----
 
 ## Links & References
 
