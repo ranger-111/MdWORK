@@ -52,35 +52,38 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 
 ### Candidates named so far
 
-| Candidate | Type | Notes |
-|-----------|------|-------|
-| **gitleaks** | OSS | Native JUnit/SARIF output; engine behind GitLab Secret Detection |
-| **trufflehog** | OSS | Live credential *verification* (lowest false positives) |
-| **SAP-internal approved scanner** | Internal | Name TBD — check SAP-internal approval status |
-
----
+| Candidate | Type | Status | Notes |
+|-----------|------|--------|-------|
+| **gitleaks** | OSS | ✅ SAP approved | Native JUnit/SARIF output; MIT; offline |
+| **trufflehog** | OSS | ❌ Not in MySoftwareHub | Ruled out |
+| **GitHub Secret Scanning** | Platform | ✅ Already active | Native GitHub feature — **already running on the repos** |
+| **SAP-internal approved scanner** | Internal | ❓ TBD | Name/approval still unclear |
 
 ## Scoring Criteria — preliminary findings (2026-10-21)
 
-> Sources: Context7 (gitleaks `/gitleaks/gitleaks`, trufflehog `/trufflesecurity/trufflehog`, both current docs) + repo Target Architecture & Quality Standards. SAP-internal column pending.
+> Sources: Context7 (gitleaks `/gitleaks/gitleaks`, both current docs) + repo Target Architecture & Quality Standards.
 > **SAP MySoftwareHub status (2026-10-23):** gitleaks **approved** ✅ — trufflehog **Not Found / not approved** ❌
+> **GitHub Secret Scanning:** already active on the repos ✅ (platform-native, no install required)
 
-| Criterion | gitleaks | trufflehog | SAP-internal |
-|-----------|----------|------------|:------------:|
-| **Detection coverage** | Regex + entropy + keyword rules; default ruleset covers common providers; extensible via `.gitleaks.toml`. Scans **git history + filesystem**. | 800+ detectors; scans filesystem, git, and many remote sources; `--since-commit`/`--branch` for diffs. | TBD |
-| **False-positive rate** | Moderate; **no live verification** → more FPs, but fully tunable via allowlists (paths/commits/regexes/stopwords/entropy). | **Lowest** — `--results=verified` actively verifies credentials against provider APIs. Signature strength. | TBD |
-| **GARM / e2e-governance fit** | **Strong** — native JUnit matches the reporting contract (same as Checkov/molecule); feeds `e2e-gate-evaluator` directly; offline. | Moderate — **no native JUnit** (json/sarif/github-actions); needs a conversion step. **Verification needs network egress** to provider APIs → may be restricted on SAP CI runners. | TBD |
-| **CI / reporting (incl. JUnit XML)** | **Native formats: `json`, `csv`, `junit`, `sarif`.** Best fit for the JUnit reporting contract (E2ETESTAUTO-17). | `json`, `sarif`, `github-actions`; **no JUnit**. `--fail` → exit 183 on findings. GitLab CI example in docs. | TBD |
-| **Maintainability** | Single Go binary; `.gitleaks.toml` (extend default rules); no network dependency; low overhead. | Single binary; include/exclude detectors, config file; verification adds network dependency + some nondeterminism. | TBD |
-| **Licensing / SAP approval** | **MIT** ✅ — **SAP MySoftwareHub: approved** ✅ | ⚠️ **AGPL-3.0** (copyleft) — **SAP MySoftwareHub: Not Found / not approved** ❌ — **ruled out** | TBD |
+| Criterion | gitleaks | GitHub Secret Scanning |
+|-----------|----------|----------------------|
+| **Detection coverage** | Regex + entropy + keyword rules; extensible via `.gitleaks.toml`. Scans **git history + filesystem**. | Pattern-based; covers GitHub's curated list of known secret types (tokens, keys, certs); scans entire git history on push. |
+| **False-positive rate** | Moderate; no live verification → tunable via allowlists. | Low for supported patterns (curated, high-confidence); limited to known provider patterns. |
+| **GARM / e2e-governance fit** | **Strong** — native JUnit matches the reporting contract; feeds `e2e-gate-evaluator` directly; offline; runs in GARM pipeline. | **Weak as a GARM gate** — GitHub-platform feature, not a CI job artifact; no JUnit output; alerts via GitHub UI/webhooks, not pipeline exit codes. Cannot directly block a GARM gate stage. |
+| **CI / reporting (incl. JUnit XML)** | **Native: `json`, `csv`, `junit`, `sarif`.** Direct fit for JUnit reporting contract (E2ETESTAUTO-17). | No JUnit output; GitHub Alerts UI only. Not pluggable into `e2e-gate-evaluator`. |
+| **Complementary / overlap** | Runs in-pipeline (pre-merge gate, G1 blocking). Catches secrets before they reach GitHub. | Runs post-push on GitHub side. Catches secrets that reach the remote. **Complementary layer, not a replacement.** |
+| **Licensing / SAP approval** | **MIT** ✅ — **SAP MySoftwareHub: approved** ✅ | GitHub platform feature — no separate approval needed; already in use. |
 
-##### Emerging option (not a decision yet)
+##### Updated picture (2026-10-23)
 
-~~A **hybrid** is worth considering: **gitleaks as the blocking G1 gate** (native JUnit → gate-evaluator, MIT, offline), optionally enriched by **trufflehog verification** as an advisory step where network egress is allowed.~~
+GitHub Secret Scanning is already active → it provides a **platform-level backstop** (post-push). That does **not** replace the need for a GARM pipeline gate: GitHub Scanning has no JUnit output, no pipeline exit code, and cannot block a G1 gate stage.
 
-**Updated (2026-10-23):** trufflehog is **ruled out** — not found / not approved in SAP MySoftwareHub. The hybrid option is no longer viable.
+**Decision: gitleaks as the blocking G1 gate + GitHub Secret Scanning as the complementary platform layer.**
 
-**Decision lean: gitleaks only.** It satisfies the JUnit reporting contract natively, is MIT-licensed, approved, and fully offline. The tradeoff (no live credential verification → moderate FP rate) is acceptable given tunable allowlists via `.gitleaks.toml`.
+- gitleaks: in-pipeline, pre-merge, blocking, JUnit-native → feeds `e2e-gate-evaluator`
+- GitHub Secret Scanning: post-push, platform-side, advisory → catches anything that slips through
+
+This is a defense-in-depth pattern, not duplication. Both controls have distinct trigger points and outputs.
 
 ## Decisions to Make
 
