@@ -54,17 +54,14 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 
 | Candidate | Type | Status | Notes |
 |-----------|------|--------|-------|
-| **betterleaks** | OSS | ✅ SAP approved | Aktiver Nachfolger von gitleaks; `.gitleaks.toml`-kompatibel; native JUnit/SARIF; MIT |
-| **gitleaks** | OSS | ✅ SAP approved | Feature-complete, Maintenance-Mode; Security-Patches bis auf weiteres |
-| **trufflehog** | OSS | ❌ Not in MySoftwareHub | Ruled out |
+| **betterleaks** | OSS | ✅ Adequate / Permitted | Aktiver Nachfolger von gitleaks; `.gitleaks.toml`-kompatibel; native JUnit/SARIF; MIT |
+| **gitleaks** | OSS | ✅ Adequate / Permitted | Feature-complete, Maintenance-Mode; Security-Patches bis auf weiteres |
+| **trufflehog** | OSS | 🚫 Not Allowed / Prohibited | Ruled out |
 | **GitHub Secret Scanning** | Platform | ✅ Already active | Native GitHub feature — **already running on the repos** |
 
 ## Scoring Criteria — preliminary findings (2026-10-21)
 
-> Sources: Context7 + repo Target Architecture & Quality Standards.
-> **SAP MySoftwareHub status (2026-10-23):** betterleaks **approved** ✅ — gitleaks **approved** ✅ — trufflehog **Not Found** ❌
-> **GitHub Secret Scanning:** already active on the repos ✅ (platform-native, no install required)
-> **gitleaks status:** feature-complete, Maintenance-Mode (Security-Patches only); maintainer shifting focus to betterleaks.
+> **SAP MySoftwareHub status (2026-10-23):** betterleaks **Adequate / Permitted** ✅ — gitleaks **Adequate / Permitted** ✅ — trufflehog **Not Allowed / Prohibited** 🚫
 
 | Criterion | betterleaks | gitleaks | GitHub Secret Scanning |
 |-----------|-------------|----------|----------------------|
@@ -125,13 +122,12 @@ The `e2e-secret-scan` control is named in Quality Standards and in the ticket, b
 ## Open Questions / Notes
 
 - [ ] **QS section reference mismatch:** the ticket cites "Quality Standards §1.4", but §1.4 is the *naming matrix*. The secret-handling discipline is in **§1.5**, and the pipeline-complementary relationship is **§2.4**. Confirm the intended reference before writing it up.
-- [ ] **Confirm Mario vs. Martin Dietner** — reporter here is "Mario Dietner"; E2ETESTAUTO-33 sign-off listed "Martin Dietner (standards)". Same person?
+- [x] ~~**Confirm Mario vs. Martin Dietner**~~ → **Mario Dietner** ist korrekt (nicht Martin).
 - [x] ~~Which **SAP-internal scanner** is the approved candidate?~~ → moot; betterleaks approved und ausgewählt.
 - [ ] **Add `e2e-secret-scan` row** to the Target Architecture change summary table (currently missing).
-- [x] ~~Confirm **trufflehog licensing** and SAP CI egress~~ → resolved: not in MySoftwareHub → ruled out.
+- [x] ~~Confirm **trufflehog licensing** and SAP CI egress~~ → resolved: Not Allowed / Prohibited in MySoftwareHub → ruled out.
 - [ ] The referenced `Ansible-Custom-Rules-Implementation.md §3.6` is **not yet in the repo** — track where e2e-secret-scan gets specified.
 - [ ] Alignment session with Mario (per Diana's note on E2ETESTAUTO-33, 2026-10-15) — relevant hier?
-- [ ] **betterleaks lokal testen** — CLI-Verhalten, FP-Rate auf dem Ansible-Repo, `.gitleaks.toml`-Kompatibilität verifizieren vor finaler D1-Entscheidung.
 
 ## Links & References
 
