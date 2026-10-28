@@ -3,88 +3,166 @@ tags:
   - tools
   - access
   - sap
+  - cyberark
 aliases:
   - CyberArk
   - Jump Host
+  - cybr-tools
 ---
 
 # CyberArk
 
-Zugang zum SAP HEC Jump Host über CyberArk / SecurID.
+Privilegierter Zugang zu SAP-HEC-Hosts über CyberArk **SIA** (Secure Infrastructure Access).
 
-## Verbindung
+- **Jump Host**: erster Einstieg per SSH mit SecurID + SAPHEC-Passwort.
+- **cybr-tools**: Helper-Funktionen, um von dort per `cybr-ssh` / `cybr-sftp` / `cybr-scp` über das CyberArk-Gateway auf die Zielsysteme zu verbinden.
+- Repo: [ECSTECHOPSSRE/cybr-tools](https://github.tools.sap/ECSTECHOPSSRE/cybr-tools)
+- Doku: [CyberArk LTS (SAP Wiki)](https://wiki.one.int.sap/wiki/pages/releaseview.action?pageId=6354307023)
+
+## 1. Jump Host Login
 
 ```bash
-ssh 147.204.148.137
+ssh 147.204.148.137   # LTS-Node 1
+ssh 147.204.148.179   # LTS-Node 2
 ```
 
-Login mit dem eigenen **d-, c- oder i-User**.
+> [!warning] Vorübergehend per IP verbinden
+> Die CyberArk-LTS-Hostnamen sind vom Laptop aktuell **nicht auflösbar** (DNS in Arbeit) – bis dahin die IPs direkt nutzen: `147.204.148.137` und `147.204.148.179`.
+> **HA mit Load Balancer** ist ebenfalls in Arbeit. Sobald aktiv, wird der LB-Hostname im [SAP Wiki](https://wiki.one.int.sap/wiki/pages/releaseview.action?pageId=6354307023) nachgetragen.
 
-## Login-Ablauf
+Login mit dem eigenen **d-, c- oder i-User**. Es folgen **zwei** Passwort-Prompts:
 
-Beim Verbinden werden **zwei** Passwort-Prompts nacheinander abgefragt:
+1. **SecurID PASSCODE** am ersten Prompt
+2. **SAPHEC-Passwort** am zweiten Prompt
 
-1. **SecurID PASSCODE** am ersten Prompt eingeben
-   ```
-   (I775185@147.204.148.137) Password:
-   ```
-2. **SAPHEC-Passwort** am zweiten Prompt eingeben
-   ```
-   (I775185@147.204.148.137) Password:
-   ```
+```
+(I775185@147.204.148.137) Password:   # 1) SecurID PASSCODE
+(I775185@147.204.148.137) Password:   # 2) SAPHEC-Passwort
+```
 
-## Nach dem Login
-
-CyberArk-Werkzeuge in die Shell laden:
+## 2. cybr-tools laden
 
 ```bash
 source ~/cybr-tools
 ```
 
-## Host-Eckdaten
+Lädt die Helper-Funktionen in die Shell (oder dauerhaft via `~/.bashrc` / `~/.zshrc`).
 
-| Feld      | Wert                                     |
-| --------- | ---------------------------------------- |
-| Hostname  | `hec01v000100`                           |
-| Kernel    | `6.4.0-150700.53.45-default`             |
-| OS        | SLES_SAP 15.7                            |
-| CPU       | 8× Intel Xeon E7-8880 v4 @ 2.20 GHz      |
-| RAM       | 16 GB (`MemTotal 16343660 kB`)           |
-| Swap      | 16 GB                                    |
-| eth0      | `147.204.148.137/23`                     |
-| eth1      | `100.126.1.36/16`                        |
+### Befehlsübersicht
+
+| Befehl | Beschreibung |
+| --- | --- |
+| `cybr-login` | CyberArk-SSH-Zertifikat holen |
+| `cybr-ssh` | SSH-Session über CyberArk öffnen |
+| `cybr-sso` | `cybr-login` + `cybr-ssh` in einem Schritt |
+| `cybr-sftp` | Interaktive SFTP-Session über CyberArk |
+| `cybr-scp` | Dateitransfer über CyberArk SCP |
+| `cybr-sso-sftp` | `cybr-login` + `cybr-sftp` |
+| `cybr-sso-scp` | `cybr-login` + `cybr-scp` |
+| `cybr-hosts-add` | Host-Alias registrieren (Kurzname → FQDN) |
+| `cybr-hosts-list` | Alle Aliase anzeigen |
+| `cybr-hosts-forget` | Einzelnen Alias entfernen |
+| `cybr-hosts-clear` | Alias-Datei löschen |
+| `cybr-help` | Befehlsreferenz anzeigen |
+
+### Verbindungsstring
+
+```
+user@login@target     # volle Form, z.B. your.mail@sap.com@hec99vXXXXXX
+target                # Kurzform (nutzt CYBR_DEFAULT_USER)
+```
+
+### Typische Nutzung
+
+```bash
+# Zertifikat holen (einmal pro Gültigkeitszeitraum)
+cybr-login
+
+# Verbinden (Standard-User)
+cybr-ssh hec99vXXXXXX
+
+# Login + Verbinden in einem Schritt
+cybr-sso your.mail@sap.com@hec99vXXXXXX
+
+# Zusätzliche SSH-Flags nach --
+cybr-ssh hec99vXXXXXX -- -L 8080:localhost:80
+
+# SFTP / SCP
+cybr-sftp hec99vXXXXXX
+cybr-scp hec99vXXXXXX:/remote/path ./local      # Download
+cybr-scp ./local hec99vXXXXXX:/remote/path      # Upload
+
+# Trockenlauf (Befehl anzeigen, nicht verbinden)
+cybr-ssh --dry-run hec99vXXXXXX
+```
+
+## 3. Setup (bash/zsh)
+
+> [!important] Config zuerst anlegen
+> `~/.cybr/config` ist Pflicht, bevor die Tools funktionieren – aus dem Example erzeugen.
+
+```bash
+mkdir -p ~/.cybr
+cp cybr-config.bash.example ~/.cybr/config
+```
+
+Pflichtwerte in `~/.cybr/config`:
+
+```bash
+CYBR_DEFAULT_USER="your.mail@sap.com"
+CYBR_TENANT="sap.cyberark.cloud"
+CYBR_SSH_HOST="sap.ssh.cyberark.cloud"
+```
+
+Dann in `~/.bashrc` / `~/.zshrc`:
+
+```bash
+source /pfad/zu/cybr-tools
+```
+
+## Hostname-Auflösung
+
+Kurznamen werden in dieser Reihenfolge zu FQDNs aufgelöst:
+
+1. **FQDN** (enthält Punkt) → unverändert
+2. **Alias** (via `cybr-hosts-add`)
+3. **Location-Map** → `<host>.<middle>.hec.sap.biz` (Präfix aus Hostname → Region)
+4. **DNS-Verifikation** des gebauten FQDN
+
+Nicht abgedeckte Hosts registrieren:
+
+```bash
+cybr-hosts-add myhost myhost.custom.domain.com
+```
+
+> [!tip]- Location-Map (Präfix → Region)
+> `hec01=rot` · `hec02=ams` · `hec03=stl` · `hec04=sac` · `hec05=tyo` · `hec06=osa`
+> `hec07=syd` · `hec08=syd2` · `hec09=rot2` · `hec10=wdf` · `hec11=mow` · `hec13=yyz`
+> `hec15=fra` · `hec16=ash` · `hec42=irl` · `hec50=sao` · `hec51=mum` · `hec53=sin`
+> `hec60=chn1` · `hec98=hlab` · `hec99=lab` …
+> Vollständige Liste in `~/.cybr/config` / Repo.
+
+## Hinweise
+
+- `cybr-config.bash` / `.ps1` enthalten persönliche Credentials → **nie committen** (sind gitignored).
+- `ssh`, `sftp`, `scp` müssen im PATH sein.
+- SSH nutzt immer `-o IdentitiesOnly=yes -o IdentityAgent=none` (verhindert Agent-Interferenz).
+- Auch für **PowerShell** (Windows/Citrix) verfügbar – Details im Repo-README.
+
+---
+
 
 > [!note]- Login-Banner (Referenz)
 > ```
 > ################################################################################
-> #                                                                              #
 > #   _____         _____                                                        #
 > #  / ____|  /\   |  __ \   This system is for authorized access only!          #
 > # | (___   /  \  | |__) |                                                      #
 > #  \___ \ / /\ \ |  ___/   Please login with Your d-, c- or i-user and         #
 > #  ____) / ____ \| |                                                           #
-> # |_____/_/    \_\_|       Your password.                                      #
-> #                                                                   SLES_SAP 15.7 #
+> # |_____/_/    \_\_|       Your password.                          SLES_SAP 15.7 #
 > ################################################################################
-> -------------------------------------------------------------------------------
 > 1) Please enter your SecurID PASSCODE at the password prompt!
-> -------------------------------------------------------------------------------
 > 2) Please enter your SAPHEC password at the following password prompt!
-> -------------------------------------------------------------------------------
 > ```
 
-> [!warning]- Rechtlicher Hinweis (SAP Systems)
-> ATTENTION – UNAUTHORIZED ACCESS IS PROHIBITED
->
-> You are accessing SAP computer systems and network through which you may have
-> access to business sensitive information ("SAP Systems"). SAP Systems are intended
-> for legitimate business use by authorized users of SAP only. Personal use of the
-> SAP Systems you are about to access is not permitted. Unless applicable law
-> provides otherwise, (i) any information stored in, transmitted through or
-> processed by SAP Systems remains at all times the property of SAP, (ii) SAP has
-> the right to scan and monitor access to and use of SAP Systems, and (iii) any
-> information on SAP Systems and any processing activities relating to such
-> information can be inspected by SAP at any time. Except as may be provided by
-> applicable law, you should have no expectation of privacy as to any information
-> stored in, transmitted through or processed by any portion of SAP Systems.
-> Unauthorized access or use of SAP Systems may result in disciplinary and legal action.
