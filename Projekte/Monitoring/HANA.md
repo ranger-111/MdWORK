@@ -1,0 +1,23 @@
+
+
+
+/usr/sap/hostctrl/exe/saphostctrl -function ListDatabaseMetrics -dbname J25 -dbtype hdb -dbinstance HDB02 -format table -id 29
+
+
+
+hdbsql -U NAGIOSJ25 -jax "SELECT SCHEMA_NAME, TABLE_NAME, (TABLE_SIZE)/1024/1024/1024 FROM M_TABLES WHERE TABLE_NAME = 'PA0146';"
+
+
+
+
+
+hdbsql -U NAGIOSJ25 -jax "SELECT FILE_NAME, LAYER_NAME, SECTION, KEY, VALUE FROM M_INIFILE_CONTENTS WHERE SECTION = 'mergedog' AND FILE_NAME = 'indexserver.ini';"
+
+
+
+hdbsql -U NAGIOSJ25 -jax "SELECT SCHEMA_NAME, TABLE_NAME, AUTO_MERGE_ON FROM "SYS"."TABLES" WHERE TABLE_NAME = '';"
+
+
+hdbsql -U NAGIOSJ25 -jax "SELECT SCHEMA_NAME, TABLE_NAME, AUTO_MERGE_ON FROM "SYS"."TABLES" WHERE TABLE_NAME = 'PA0146';"
+
+
